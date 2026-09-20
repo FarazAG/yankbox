@@ -11,6 +11,7 @@ import (
 var ErrHistoryDisabled = errors.New("Windows Clipboard History is disabled")
 
 type Item struct {
+	ID   string
 	Text string
 }
 
@@ -75,12 +76,18 @@ func History() ([]Item, error) {
 			return nil, err
 		}
 
+		id, err := item.Id()
+		if err != nil {
+			return nil, err
+		}
+
 		text, err := textOperation.Await()
 		if err != nil {
 			return nil, err
 		}
 
 		history = append(history, Item{
+			ID:   id,
 			Text: text,
 		})
 	}
