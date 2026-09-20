@@ -1,19 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
-	"github.com/FarazAG/yankstash/internal/clipboard"
+	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/FarazAG/yankstash/internal/tui"
 )
 
 func main() {
-	items, err := clipboard.History()
-	if err != nil {
-		log.Fatal(err)
-	}
+	p := tea.NewProgram(tui.NewModel())
 
-	for i, item := range items {
-		fmt.Printf("%d. %s\n", i+1, item.Text)
+	if _, err := p.Run(); err != nil {
+		log.Fatal(err)
 	}
 }
