@@ -2,10 +2,13 @@ package tui
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/FarazAG/yankstash/internal/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+type historyTickMsg struct{}
 
 type model struct {
 	items    []clipboard.Item
@@ -25,11 +28,38 @@ func NewModel() model {
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return tickHistory()
+}
+
+func tickHistory() tea.Cmd {
+	return tea.Tick(500*time.Millisecond, func(time.Time) tea.Msg {
+		return historyTickMsg{}
+	})
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case historyTickMsg:
+		items, err := clipboard.History()
+		if err != nil {
+			m.status = "Refresh failed: " + err.Error()
+			return m, tickHistory()
+		}
+
+		if historyChanged(m.items, items) {
+			m.items = items
+
+			if m.selected >= len(m.items) {
+				m.selected = len(m.items) - 1
+			}
+
+			if m.selected < 0 {
+				m.selected = 0
+			}
+		}
+
+		return m, tickHistory()
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
@@ -61,6 +91,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func historyChanged(oldItems, newItems []clipboard.Item) bool {
+	if len(oldItems) != len(newItems) {
+		return true
+	}
+
+	for i := range oldItems {
+		if oldItems[i].ID != newItems[i].ID {
+			return true
+		}
+	}
+
+	return false
 }
 
 func preview(text string) string {
