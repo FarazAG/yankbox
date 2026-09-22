@@ -8,7 +8,8 @@ import (
 )
 
 type model struct {
-	items []clipboard.Item
+	items    []clipboard.Item
+	selected int
 }
 
 func NewModel() model {
@@ -29,10 +30,22 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.String() == "q" {
+		switch msg.String() {
+		case "q":
 			return m, tea.Quit
+
+		case "j", "down":
+			if m.selected < len(m.items)-1 {
+				m.selected++
+			}
+
+		case "k", "up":
+			if m.selected > 0 {
+				m.selected--
+			}
 		}
 	}
+
 	return m, nil
 }
 
@@ -52,7 +65,13 @@ func (m model) View() string {
 	var view string
 
 	for i, item := range m.items {
-		view += fmt.Sprintf("%d. %s\n", i+1, preview(item.Text))
+		prefix := " "
+
+		if i == m.selected {
+			prefix = "> "
+		}
+
+		view += fmt.Sprintf("%s%d. %s\n", prefix, i+1, preview(item.Text))
 	}
 
 	view += "\nPress q to quit.\n"
