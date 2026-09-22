@@ -87,6 +87,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.status = "Yanked!"
 			}
+
+		case "1", "2", "3", "4", "5", "6", "7", "8", "9", "0":
+			index := int(msg.Runes[0] - '1')
+
+			if msg.String() == "0" {
+				index = 9
+			}
+
+			if index >= len(m.items) {
+				break
+			}
+
+			err := clipboard.Yank(m.items[index].ID)
+
+			if err != nil {
+				m.status = "Yank failed: " + err.Error()
+			} else {
+				m.status = fmt.Sprintf("Yanked #%d", index+1)
+			}
 		}
 	}
 
