@@ -10,6 +10,7 @@ import (
 type model struct {
 	items    []clipboard.Item
 	selected int
+	status   string
 }
 
 func NewModel() model {
@@ -43,13 +44,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.selected > 0 {
 				m.selected--
 			}
+
+		case "y":
+			if len(m.items) == 0 {
+				break
+			}
+
+			err := clipboard.Yank(m.items[m.selected].ID)
+
+			if err != nil {
+				m.status = "Yank failed: " + err.Error()
+			} else {
+				m.status = "Yanked!"
+			}
 		}
 	}
 
 	return m, nil
 }
-
-// view helper function - preview
 
 func preview(text string) string {
 	for i, char := range text {
@@ -65,16 +77,22 @@ func (m model) View() string {
 	var view string
 
 	for i, item := range m.items {
-		prefix := " "
+		prefix := "  "
 
 		if i == m.selected {
 			prefix = "> "
 		}
 
-		view += fmt.Sprintf("%s%d. %s\n", prefix, i+1, preview(item.Text))
+		view += fmt.Sprintf(
+			"%s%d. %s\n",
+			prefix,
+			i+1,
+			preview(item.Text),
+		)
 	}
 
-	view += "\nPress q to quit.\n"
+	view += "\n" + m.status + "\n"
+	view += "j/k or arrows navigate   y yank   q quit\n"
 
 	return view
 }

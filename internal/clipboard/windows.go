@@ -2,10 +2,9 @@ package clipboard
 
 import (
 	"errors"
-	"runtime"
+	"fmt"
 
 	"github.com/deploymenttheory/go-bindings-winrt/bindings/winrt/applicationmodel/datatransfer"
-	"golang.org/x/sys/windows"
 )
 
 var ErrHistoryDisabled = errors.New("Windows Clipboard History is disabled")
@@ -16,14 +15,6 @@ type Item struct {
 }
 
 func History() ([]Item, error) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-
-	if err := windows.CoInitializeEx(0, windows.COINIT_APARTMENTTHREADED); err != nil {
-		return nil, err
-	}
-	defer windows.CoUninitialize()
-
 	clipboard, err := datatransfer.ClipboardStatics2()
 	if err != nil {
 		return nil, err
@@ -93,4 +84,60 @@ func History() ([]Item, error) {
 	}
 
 	return history, nil
+}
+
+func Yank(id string) error {
+	clipboard, err := datatransfer.ClipboardStatics2()
+	if err != nil {
+		return err
+	}
+
+	operation, err := clipboard.GetHistoryItemsAsync()
+	if err != nil {
+		return err
+	}
+
+	result, err := operation.Await()
+	if err != nil {
+		return err
+	}
+
+	items, err := result.Items()
+	if err != nil {
+		return err
+	}
+
+	count, err := items.Size()
+	if err != nil {
+		return err
+	}
+
+	for i := uint32(0); i < count; i++ {
+		item, err := items.GetAt(i)
+		if err != nil {
+			return err
+		}
+
+		itemID, err := item.Id()
+		if err != nil {
+			return err
+		}
+
+		if itemID != id {
+			continue
+		}
+
+		status, err := clipboard.SetHistoryItemAsContent(item)
+		if err != nil {
+			return err
+		}
+
+		if status != datatransfer.SetHistoryItemAsContentStatusSuccess {
+			return fmt.Errorf("set history item failed: %s", status)
+		}
+
+		return nil
+	}
+
+	return errors.New("clipboard history item not found")
 }
