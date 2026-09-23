@@ -14,13 +14,19 @@ import (
 type historyTickMsg struct{}
 
 type model struct {
-	items    []clipboard.Item
-	selected int
-	status   string
-	width    int
-	height   int
-	viewport viewport.Model
+	items           []clipboard.Item
+	selected        int
+	status          string
+	width           int
+	height          int
+	viewport        viewport.Model
+	historyViewport viewport.Model
 }
+
+var selectedItemStyle = lipgloss.NewStyle().
+	Background(lipgloss.Color("#7C3AED")).
+	Foreground(lipgloss.Color("#FFFFFF")).
+	Bold(true)
 
 func NewModel() model {
 	items, err := clipboard.History()
@@ -55,7 +61,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.Width = rightWidth - 4
 		m.viewport.Height = m.height - 4
 
+		m.historyViewport.Width = leftWidth - 4
+		m.historyViewport.Height = m.height - 6
+
 		m.updateViewport()
+		m.updateHistoryViewport()
 
 	case historyTickMsg:
 		items, err := clipboard.History()
@@ -76,6 +86,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.updateViewport()
+			m.updateHistoryViewport()
 		}
 
 		return m, tickHistory()
@@ -89,12 +100,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.selected < len(m.items)-1 {
 				m.selected++
 				m.updateViewport()
+				m.updateHistoryViewport()
 			}
 
 		case "k", "up":
 			if m.selected > 0 {
 				m.selected--
 				m.updateViewport()
+				m.updateHistoryViewport()
 			}
 
 		case "ctrl+d":
@@ -150,6 +163,50 @@ func (m *model) updateViewport() {
 	m.viewport.GotoTop()
 }
 
+func (m *model) updateHistoryViewport() {
+	var history strings.Builder
+
+	for i, item := range m.items {
+		prefix := "  "
+
+		if i == m.selected {
+			prefix = "▶ "
+		}
+
+		line := fmt.Sprintf(
+			"%s%d. %s",
+			prefix,
+			i+1,
+			preview(item.Text),
+		)
+
+		if i == m.selected {
+			line = selectedItemStyle.Render(line)
+		}
+
+		fmt.Fprintln(&history, line)
+
+		if i < len(m.items)-1 {
+			fmt.Fprintln(&history)
+		}
+	}
+
+	m.historyViewport.SetContent(history.String())
+
+	historyItemHeight := 2
+	targetOffset := m.selected * historyItemHeight
+
+	if targetOffset < m.historyViewport.YOffset {
+		m.historyViewport.SetYOffset(targetOffset)
+	}
+
+	if targetOffset >= m.historyViewport.YOffset+m.historyViewport.Height {
+		m.historyViewport.SetYOffset(
+			targetOffset - m.historyViewport.Height + historyItemHeight,
+		)
+	}
+}
+
 func historyChanged(oldItems, newItems []clipboard.Item) bool {
 	if len(oldItems) != len(newItems) {
 		return true
@@ -182,40 +239,34 @@ func (m model) View() string {
 	leftWidth := m.width / 3
 	rightWidth := m.width - leftWidth
 
+	titleStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#A78BFA")).
+		Bold(true)
+
 	leftStyle := lipgloss.NewStyle().
-		Width(leftWidth - 2).
-		Height(m.height - 2).
-		Border(lipgloss.NormalBorder())
+		Width(leftWidth-2).
+		Height(m.height-2).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("#7C3AED")).
+		Padding(0, 1)
 
 	rightStyle := lipgloss.NewStyle().
-		Width(rightWidth - 2).
-		Height(m.height - 2).
-		Border(lipgloss.NormalBorder())
+		Width(rightWidth-2).
+		Height(m.height-2).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("#7C3AED")).
+		Padding(0, 1)
 
 	var left strings.Builder
 
-	fmt.Fprintln(&left, "CLIPBOARD HISTORY")
+	fmt.Fprintln(&left, titleStyle.Render("CLIPBOARD HISTORY"))
 	fmt.Fprintln(&left)
 
-	for i, item := range m.items {
-		prefix := "  "
-
-		if i == m.selected {
-			prefix = "> "
-		}
-
-		fmt.Fprintf(
-			&left,
-			"%s%d. %s\n",
-			prefix,
-			i+1,
-			preview(item.Text),
-		)
-	}
+	left.WriteString(m.historyViewport.View())
 
 	var right strings.Builder
 
-	fmt.Fprintln(&right, "PREVIEW")
+	fmt.Fprintln(&right, titleStyle.Render("PREVIEW"))
 	fmt.Fprintln(&right)
 	right.WriteString(m.viewport.View())
 
