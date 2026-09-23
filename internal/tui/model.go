@@ -140,6 +140,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 
+			m.selected = index
+			m.updateViewport()
+			m.updateHistoryViewport()
+
 			err := clipboard.Yank(m.items[index].ID)
 
 			if err != nil {
