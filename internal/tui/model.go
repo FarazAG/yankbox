@@ -11,12 +11,16 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type historyTickMsg struct{}
+type (
+	historyTickMsg struct{}
+	yankFlashMsg   struct{}
+)
 
 type model struct {
 	items           []clipboard.Item
 	selected        int
 	status          string
+	flash           bool
 	width           int
 	height          int
 	viewport        viewport.Model
@@ -49,6 +53,12 @@ func tickHistory() tea.Cmd {
 	})
 }
 
+func yankFlash() tea.Cmd {
+	return tea.Tick(110*time.Millisecond, func(time.Time) tea.Msg {
+		return yankFlashMsg{}
+	})
+}
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -65,6 +75,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.historyViewport.Height = m.height - 3
 
 		m.updateViewport()
+		m.updateHistoryViewport()
+
+	case yankFlashMsg:
+		m.flash = false
 		m.updateHistoryViewport()
 
 	case historyTickMsg:
@@ -127,6 +141,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.status = "Yank failed: " + err.Error()
 			} else {
 				m.status = "Yanked!"
+				m.flash = true
+				m.updateHistoryViewport()
+				return m, yankFlash()
 			}
 
 		case "1", "2", "3", "4", "5", "6", "7", "8", "9", "0":
@@ -150,6 +167,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.status = "Yank failed: " + err.Error()
 			} else {
 				m.status = fmt.Sprintf("Yanked #%d", index+1)
+				m.flash = true
+				m.updateHistoryViewport()
+				return m, yankFlash()
 			}
 		}
 	}
@@ -185,7 +205,15 @@ func (m *model) updateHistoryViewport() {
 		)
 
 		if i == m.selected {
-			line = selectedItemStyle.Render(line)
+			if m.flash {
+				line = lipgloss.NewStyle().
+					Background(lipgloss.Color("#14B8A6")).
+					Foreground(lipgloss.Color("#FFFFFF")).
+					Bold(true).
+					Render(line)
+			} else {
+				line = selectedItemStyle.Render(line)
+			}
 		}
 
 		fmt.Fprintln(&history, line)
