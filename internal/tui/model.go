@@ -59,10 +59,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		rightWidth := m.width - leftWidth
 
 		m.viewport.Width = rightWidth - 4
-		m.viewport.Height = m.height - 7
+		m.viewport.Height = m.height - 3
 
 		m.historyViewport.Width = leftWidth - 4
-		m.historyViewport.Height = m.height - 7
+		m.historyViewport.Height = m.height - 3
 
 		m.updateViewport()
 		m.updateHistoryViewport()
