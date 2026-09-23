@@ -222,6 +222,8 @@ func historyChanged(oldItems, newItems []clipboard.Item) bool {
 }
 
 func preview(text string) string {
+	text = strings.ReplaceAll(text, "\t", "    ")
+
 	for i, char := range text {
 		if char == '\n' || char == '\r' {
 			return text[:i] + "..."
