@@ -59,7 +59,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		rightWidth := m.width - leftWidth
 
 		m.viewport.Width = rightWidth - 4
-		m.viewport.Height = m.height - 4
+		m.viewport.Height = m.height - 6
 
 		m.historyViewport.Width = leftWidth - 4
 		m.historyViewport.Height = m.height - 6
@@ -239,40 +239,62 @@ func (m model) View() string {
 	leftWidth := m.width / 3
 	rightWidth := m.width - leftWidth
 
-	titleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#A78BFA")).
-		Bold(true)
+	left := panel(
+		"YANKSTASH",
+		m.historyViewport.View(),
+		leftWidth,
+		m.height,
+	)
 
-	leftStyle := lipgloss.NewStyle().
-		Width(leftWidth-2).
-		Height(m.height-2).
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#7C3AED")).
-		Padding(0, 1)
-
-	rightStyle := lipgloss.NewStyle().
-		Width(rightWidth-2).
-		Height(m.height-2).
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#7C3AED")).
-		Padding(0, 1)
-
-	var left strings.Builder
-
-	fmt.Fprintln(&left, titleStyle.Render("CLIPBOARD HISTORY"))
-	fmt.Fprintln(&left)
-
-	left.WriteString(m.historyViewport.View())
-
-	var right strings.Builder
-
-	fmt.Fprintln(&right, titleStyle.Render("PREVIEW"))
-	fmt.Fprintln(&right)
-	right.WriteString(m.viewport.View())
+	right := panel(
+		"PREVIEW",
+		m.viewport.View(),
+		rightWidth,
+		m.height,
+	)
 
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		leftStyle.Render(left.String()),
-		rightStyle.Render(right.String()),
+		left,
+		right,
 	)
+}
+
+func panel(title, content string, width, height int) string {
+	borderColor := lipgloss.Color("#7C3AED")
+
+	style := lipgloss.NewStyle().
+		Width(width-2).
+		Height(height-2).
+		Padding(0, 1).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor)
+
+	box := style.Render(content)
+	lines := strings.Split(box, "\n")
+
+	if len(lines) == 0 {
+		return box
+	}
+
+	topWidth := lipgloss.Width(lines[0])
+	titleText := "── " + title + " "
+
+	remaining := topWidth - 2 - lipgloss.Width(titleText)
+
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	lines[0] = lipgloss.NewStyle().
+		Foreground(borderColor).
+		Bold(true).
+		Render(
+			"╭" +
+				titleText +
+				strings.Repeat("─", remaining) +
+				"╮",
+		)
+
+	return strings.Join(lines, "\n")
 }
