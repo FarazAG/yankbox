@@ -59,10 +59,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		rightWidth := m.width - leftWidth
 
 		m.viewport.Width = rightWidth - 4
-		m.viewport.Height = m.height - 6
+		m.viewport.Height = m.height - 7
 
 		m.historyViewport.Width = leftWidth - 4
-		m.historyViewport.Height = m.height - 6
+		m.historyViewport.Height = m.height - 7
 
 		m.updateViewport()
 		m.updateHistoryViewport()
@@ -231,6 +231,10 @@ func preview(text string) string {
 	return text
 }
 
+func hyperlink(text, url string) string {
+	return "\x1b]8;;" + url + "\x1b\\" + text + "\x1b]8;;\x1b\\"
+}
+
 func (m model) View() string {
 	if m.width == 0 || m.height == 0 {
 		return ""
@@ -243,21 +247,41 @@ func (m model) View() string {
 		"YANKSTASH",
 		m.historyViewport.View(),
 		leftWidth,
-		m.height,
+		m.height-1,
 	)
 
 	right := panel(
 		"PREVIEW",
 		m.viewport.View(),
 		rightWidth,
-		m.height,
+		m.height-1,
 	)
 
-	return lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		left,
-		right,
+	panels := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+
+	footerStyle := lipgloss.NewStyle().
+		PaddingLeft(2).
+		Foreground(lipgloss.Color("#A78BFA"))
+
+	leftFooter := footerStyle.Render("j/k Navigate   y Yank   1-0 Quick Yank   q Quit")
+	githubStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#5EEAD4")).
+		PaddingRight(2)
+
+	rightFooter := githubStyle.Render(
+		hyperlink("github.com/FarazAG", "https://github.com/FarazAG"),
 	)
+
+	footer := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		leftFooter,
+		lipgloss.NewStyle().
+			Width(m.width-lipgloss.Width(leftFooter)).
+			Align(lipgloss.Right).
+			Render(rightFooter),
+	)
+
+	return lipgloss.JoinVertical(lipgloss.Left, panels, footer)
 }
 
 func panel(title, content string, width, height int) string {
