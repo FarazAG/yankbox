@@ -297,7 +297,7 @@ func (m model) View() string {
 		PaddingLeft(2).
 		Foreground(lipgloss.Color("#A78BFA"))
 
-	leftFooter := footerStyle.Render("j/k Navigate   y Yank   1-0 Quick Yank   q Quit")
+	leftFooter := footerStyle.Render("j/k Navigate   y Yank   1-0 Quick Yank   ^d/^u Preview Scroll   q Quit")
 	githubStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#5EEAD4")).
 		PaddingRight(2)
