@@ -1,4 +1,4 @@
-module github.com/FarazAG/yankstash
+module github.com/FarazAG/yankbox
 
 go 1.26.3
 

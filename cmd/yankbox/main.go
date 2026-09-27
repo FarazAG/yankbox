@@ -7,7 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"golang.org/x/sys/windows"
 
-	"github.com/FarazAG/yankstash/internal/tui"
+	"github.com/FarazAG/yankbox/internal/tui"
 )
 
 func main() {

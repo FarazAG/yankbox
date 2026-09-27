@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FarazAG/yankstash/internal/clipboard"
+	"github.com/FarazAG/yankbox/internal/clipboard"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -278,7 +278,7 @@ func (m model) View() string {
 	rightWidth := m.width - leftWidth
 
 	left := panel(
-		"YANKSTASH",
+		"YANKBOX",
 		m.historyViewport.View(),
 		leftWidth,
 		m.height-1,
