@@ -62,6 +62,25 @@ func History() ([]Item, error) {
 			return nil, err
 		}
 
+		formats, err := datatransfer.StandardDataFormatsStatics()
+		if err != nil {
+			return nil, err
+		}
+
+		textFormat, err := formats.Text()
+		if err != nil {
+			return nil, err
+		}
+
+		hasText, err := content.Contains(textFormat)
+		if err != nil {
+			return nil, err
+		}
+
+		if !hasText {
+			continue
+		}
+
 		textOperation, err := content.GetTextAsync()
 		if err != nil {
 			return nil, err
